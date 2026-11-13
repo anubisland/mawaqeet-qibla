@@ -70,6 +70,7 @@ window.WORLD_CITIES = [
   { id: 'moscow', nameAr: 'موسكو', nameEn: 'Moscow', countryAr: 'روسيا', countryEn: 'Russia', lat: 55.7558, lng: 37.6173, tz: 'Europe/Moscow', method: 'MWL' },
 
   // Americas
+  { id: 'santaclara', nameAr: 'سانتا كلارا، كاليفورنيا', nameEn: 'Santa Clara, CA', countryAr: 'الولايات المتحدة', countryEn: 'USA', lat: 37.3541, lng: -121.9552, tz: 'America/Los_Angeles', method: 'ISNA' },
   { id: 'newyork', nameAr: 'نيويورك', nameEn: 'New York', countryAr: 'الولايات المتحدة', countryEn: 'USA', lat: 40.7128, lng: -74.0060, tz: 'America/New_York', method: 'ISNA' },
   { id: 'losangeles', nameAr: 'لوس أنجلوس', nameEn: 'Los Angeles', countryAr: 'الولايات المتحدة', countryEn: 'USA', lat: 34.0522, lng: -118.2437, tz: 'America/Los_Angeles', method: 'ISNA' },
   { id: 'chicago', nameAr: 'شيكاغو', nameEn: 'Chicago', countryAr: 'الولايات المتحدة', countryEn: 'USA', lat: 41.8781, lng: -87.6298, tz: 'America/Chicago', method: 'ISNA' },

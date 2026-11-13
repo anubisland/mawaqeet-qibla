@@ -2,7 +2,56 @@
   'use strict';
 
   const STORAGE_KEY = 'anubisland_mawaqeet_v1';
-  const defaultCity = window.WORLD_CITIES[0]; // Cairo
+  const TIMEZONE_ALIASES = {
+    'US/Pacific': 'America/Los_Angeles',
+    'PST8PDT': 'America/Los_Angeles',
+    'America/San_Francisco': 'America/Los_Angeles',
+    'America/Santa_Isabel': 'America/Los_Angeles',
+    'US/Eastern': 'America/New_York',
+    'America/Detroit': 'America/New_York',
+    'US/Central': 'America/Chicago',
+    'US/Mountain': 'America/Denver',
+    'Asia/Calcutta': 'Asia/Kolkata'
+  };
+
+  function getDistanceKm(lat1, lng1, lat2, lng2) {
+    const toRad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * toRad;
+    const dLng = (lng2 - lng1) * toRad;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function findNearestCity(lat, lng) {
+    let nearest = window.WORLD_CITIES[0];
+    let minDistance = Infinity;
+    window.WORLD_CITIES.forEach((city) => {
+      const dist = getDistanceKm(lat, lng, city.lat, city.lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearest = city;
+      }
+    });
+    return { city: nearest, distanceKm: minDistance };
+  }
+
+  /** Pick the best matching city for the device's IANA timezone (Santa Clara for Pacific time). */
+  function detectCityByTimezone() {
+    try {
+      const rawTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const tz = TIMEZONE_ALIASES[rawTz] || rawTz;
+      if (tz) {
+        const match = window.WORLD_CITIES.find((c) => c.tz === tz);
+        if (match) return match;
+      }
+    } catch (e) {
+      console.warn('Could not detect timezone', e);
+    }
+    return window.WORLD_CITIES[0];
+  }
+
+  const defaultCity = detectCityByTimezone();
 
   const state = {
     lang: 'ar',
@@ -10,6 +59,7 @@
     font: "'Cairo', sans-serif",
     fontSize: '16px',
     city: defaultCity,
+    citySource: 'auto',
     favorites: ['makkah', 'cairo', 'london'],
     method: defaultCity.method,
     asrSchool: 'STANDARD',
@@ -32,10 +82,20 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
+        if (parsed.city && !parsed.citySource) {
+          const id = String(parsed.city.id || '');
+          parsed.citySource = (id === 'cairo' || id.startsWith('gps_')) ? 'auto' : 'manual';
+        }
         Object.assign(state, parsed);
       }
     } catch (e) {
       console.warn('Could not load saved state', e);
+    }
+    if (state.citySource !== 'manual') {
+      const tzCity = detectCityByTimezone();
+      state.city = tzCity;
+      state.method = tzCity.method || state.method;
+      state.citySource = 'auto';
     }
   }
 
@@ -47,6 +107,7 @@
         font: state.font,
         fontSize: state.fontSize,
         city: state.city,
+        citySource: state.citySource,
         favorites: state.favorites,
         method: state.method,
         asrSchool: state.asrSchool,
@@ -153,10 +214,14 @@
     });
   }
 
-  function selectCity(city) {
+  function selectCity(city, source = 'manual') {
     state.city = city;
-    if (city.method && window.PrayerEngine.METHODS[city.method]) {
-      state.method = city.method;
+    state.citySource = source;
+    const inferredMethod = (city.method && window.PrayerEngine.METHODS[city.method])
+      ? city.method
+      : findNearestCity(city.lat, city.lng).city.method;
+    if (inferredMethod && window.PrayerEngine.METHODS[inferredMethod]) {
+      state.method = inferredMethod;
       document.getElementById('calcMethodSelect').value = state.method;
     }
     saveState();
@@ -566,7 +631,7 @@
       const q = input.value.trim();
       if (!q) return;
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(q)}`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=${state.lang}&q=${encodeURIComponent(q)}`);
         const data = await res.json();
         const mapped = data.map((item) => {
           const lat = parseFloat(item.lat);
@@ -581,7 +646,7 @@
             lat,
             lng,
             tz: Math.round(lng / 15),
-            method: 'MWL'
+            method: findNearestCity(lat, lng).city.method
           };
         });
         showMatches(mapped);
@@ -650,34 +715,9 @@
       btn.textContent = t('detectingGps');
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || Math.round(lng / 15);
-          let cityObj = {
-            id: `gps_${lat.toFixed(2)}_${lng.toFixed(2)}`,
-            nameAr: 'موقعي الحالي (GPS)',
-            nameEn: 'My GPS Location',
-            countryAr: '',
-            countryEn: '',
-            lat,
-            lng,
-            tz,
-            method: state.method
-          };
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            const data = await res.json();
-            if (data && data.address) {
-              const name = data.address.city || data.address.town || data.address.state || cityObj.nameEn;
-              const country = data.address.country || '';
-              cityObj.nameAr = name;
-              cityObj.nameEn = name;
-              cityObj.countryAr = country;
-              cityObj.countryEn = country;
-            }
-          } catch { /* offline fallback uses GPS label */ }
+          const cityObj = await resolveGpsCity(pos.coords.latitude, pos.coords.longitude);
           btn.textContent = t('detectGpsBtn');
-          selectCity(cityObj);
+          selectCity(cityObj, 'auto');
         },
         () => {
           btn.textContent = t('detectGpsBtn');
@@ -824,6 +864,71 @@
     });
   }
 
+  function extractNominatimPlace(address, fallbackName) {
+    if (!address) return { name: fallbackName, country: '' };
+    const name = address.city || address.town || address.village || address.municipality || address.county || address.state || fallbackName;
+    return { name, country: address.country || '' };
+  }
+
+  async function fetchReverseGeocode(lat, lng, lang) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=${lang}&lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    return data && data.address ? data.address : null;
+  }
+
+  /**
+   * Resolve coordinates to a known nearby city (e.g. Santa Clara in the Bay Area)
+   * or reverse-geocode a custom GPS location with localized Arabic and English names.
+   */
+  async function resolveGpsCity(lat, lng) {
+    const nearest = findNearestCity(lat, lng);
+    const snapRadiusKm = nearest.city.id === 'santaclara' ? 80 : 40;
+    if (nearest.distanceKm <= snapRadiusKm) {
+      return nearest.city;
+    }
+
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || Math.round(lng / 15);
+    const cityObj = {
+      id: `gps_${lat.toFixed(2)}_${lng.toFixed(2)}`,
+      nameAr: 'موقعي الحالي (GPS)',
+      nameEn: 'My GPS Location',
+      countryAr: '',
+      countryEn: '',
+      lat,
+      lng,
+      tz,
+      method: (nearest.city && nearest.city.method) || state.method
+    };
+    try {
+      const [addrAr, addrEn] = await Promise.all([
+        fetchReverseGeocode(lat, lng, 'ar'),
+        fetchReverseGeocode(lat, lng, 'en')
+      ]);
+      const arPlace = extractNominatimPlace(addrAr, cityObj.nameAr);
+      const enPlace = extractNominatimPlace(addrEn, cityObj.nameEn);
+      cityObj.nameAr = arPlace.name;
+      cityObj.countryAr = arPlace.country;
+      cityObj.nameEn = enPlace.name;
+      cityObj.countryEn = enPlace.country;
+    } catch { /* offline fallback uses GPS label */ }
+    return cityObj;
+  }
+
+  function autoDetectDeviceLocation() {
+    if (state.citySource !== 'auto' || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        if (state.citySource !== 'auto') return;
+        const detected = await resolveGpsCity(pos.coords.latitude, pos.coords.longitude);
+        if (state.citySource === 'auto') {
+          selectCity(detected, 'auto');
+        }
+      },
+      () => { /* Keep timezone-based default silently if permission is denied or unavailable */ },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  }
+
   function registerSW() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch((err) => {
@@ -840,6 +945,7 @@
     renderAll();
     tickClock();
     setInterval(tickClock, 1000);
+    autoDetectDeviceLocation();
     registerSW();
   });
 })();
