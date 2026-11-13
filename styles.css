@@ -239,14 +239,29 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Location Bar */
+/* Location Bar (المدينة المرجعية) */
 .location-bar {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background-color: #064e3b;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23fbbf24' stroke-opacity='0.12' stroke-width='1.2'%3E%3Cpolygon points='48,6 60,36 90,48 60,60 48,90 36,60 6,48 36,36'/%3E%3Crect x='22' y='22' width='52' height='52'/%3E%3Crect x='22' y='22' width='52' height='52' transform='rotate(45 48 48)'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(135deg, #04392b 0%, #064e3b 50%, #047857 100%);
+  border: 1.5px solid rgba(251, 191, 36, 0.38);
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 18px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  color: #ffffff;
+}
+
+.location-bar .btn-secondary {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.location-bar .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(251, 191, 36, 0.6);
 }
 
 .location-controls {
@@ -265,17 +280,22 @@ body {
   width: 100%;
   padding: 11px 16px;
   border-radius: 12px;
-  border: 1.5px solid var(--border-color);
-  background: var(--bg-main);
-  color: var(--text-primary);
+  border: 1.5px solid rgba(251, 191, 36, 0.4);
+  background: rgba(255, 255, 255, 0.94);
+  color: #0a241c;
   font-size: 0.95rem;
   font-weight: 600;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input::placeholder {
+  color: #4b6b5f;
 }
 
 .search-input:focus {
-  border-color: var(--brand-emerald-light);
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25);
 }
 
 .search-dropdown {
@@ -283,6 +303,7 @@ body {
   top: calc(100% + 6px);
   inset-inline: 0;
   background: var(--bg-surface);
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 14px;
   box-shadow: var(--shadow-md);
@@ -320,13 +341,13 @@ body {
 .fav-label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #fde68a;
 }
 
 .fav-chip {
-  background: var(--bg-soft);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 4px 12px;
   font-size: 0.82rem;
@@ -338,14 +359,18 @@ body {
   transition: 0.15s;
 }
 
+.fav-chip:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
 .fav-chip.active {
-  background: var(--brand-emerald);
-  color: #ffffff;
-  border-color: var(--brand-emerald);
+  background: #fbbf24;
+  color: #04392b;
+  border-color: #fbbf24;
 }
 
 .fav-chip .remove-fav {
-  opacity: 0.65;
+  opacity: 0.75;
   font-weight: 800;
 }
 
@@ -361,12 +386,23 @@ body {
   border-radius: var(--radius-lg);
   padding: 26px;
   color: #ffffff;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='110' viewBox='0 0 110 110'%3E%3Cg fill='none' stroke='%23fbbf24' stroke-opacity='0.1' stroke-width='1.2'%3E%3Ccircle cx='55' cy='55' r='36'/%3E%3Cpolygon points='55,10 68,42 100,55 68,68 55,100 42,68 10,55 42,42'/%3E%3C/g%3E%3C/svg%3E"),
-    linear-gradient(135deg, #04392b 0%, #065f46 55%, #0f766e 100%);
-  border: 1.5px solid rgba(251, 191, 36, 0.35);
+  background-color: #064e3b;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23fbbf24' stroke-opacity='0.11' stroke-width='1.2'%3E%3Cpolygon points='48,6 60,36 90,48 60,60 48,90 36,60 6,48 36,36'/%3E%3Crect x='22' y='22' width='52' height='52'/%3E%3Crect x='22' y='22' width='52' height='52' transform='rotate(45 48 48)'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(135deg, #053e30 0%, #065f46 52%, #047857 100%);
+  border: 1.5px solid rgba(251, 191, 36, 0.38);
   box-shadow: var(--shadow-md);
   margin-bottom: 22px;
+}
+
+.hero-card::before {
+  content: '۞';
+  position: absolute;
+  inset-inline-end: -14px;
+  top: -38px;
+  font-size: 15rem;
+  color: rgba(251, 191, 36, 0.08);
+  pointer-events: none;
 }
 
 .hero-grid {
