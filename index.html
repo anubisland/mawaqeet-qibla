@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>مواقيت الصلاة والقبلة | AnubisLand</title>
+  <meta name="description" content="تطبيق ويب متكامل (PWA) لتحديد مواقيت الصلاة بدقة فلكية في أي مكان في العالم وتحديد اتجاه القبلة بالبوصلة التفاعلية - من AnubisLand." />
+  <meta name="theme-color" content="#064e3b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="مواقيت والقبلة" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&family=Readex+Pro:wght@400;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top-header">
+    <div class="container header-inner">
+      <div class="brand-box">
+        <img src="icons/icon-192.png" alt="Mawaqeet & Qibla Logo" class="brand-logo-img" />
+        <div class="brand-text">
+          <h1 data-i18n="appTitle">مواقيت الصلاة والقبلة</h1>
+          <span data-i18n="brandSub">دليل المواقيت العالمي والقبلة • AnubisLand</span>
+        </div>
+      </div>
+
+      <nav class="nav-pills" aria-label="Main Navigation">
+        <button type="button" class="nav-pill active" data-view="prayers" data-i18n="navPrayers">مواقيت الصلاة</button>
+        <button type="button" class="nav-pill" data-view="qibla" data-i18n="navQibla">بوصلة القبلة</button>
+        <button type="button" class="nav-pill" data-view="schedule" data-i18n="navSchedule">الجدول الشهري</button>
+        <button type="button" class="nav-pill" data-view="tracker" data-i18n="navTracker">المتابعة والإعدادات</button>
+      </nav>
+
+      <div class="header-actions">
+        <button id="btnInstallPWA" class="btn-primary hidden" type="button">
+          <span>📲</span> <span data-i18n="installBtn">تثبيت التطبيق</span>
+        </button>
+        <select id="fontSelect" class="header-select" aria-label="Font Family">
+          <option value="'Cairo', sans-serif" data-i18n="fontCairo">خط: Cairo (كايرو)</option>
+          <option value="'Amiri', serif" data-i18n="fontAmiri">خط: Amiri (أميري)</option>
+          <option value="'Tajawal', sans-serif" data-i18n="fontTajawal">خط: Tajawal (تجول)</option>
+          <option value="'Almarai', sans-serif" data-i18n="fontAlmarai">خط: Almarai (المراعي)</option>
+          <option value="'Readex Pro', sans-serif" data-i18n="fontReadex">خط: Readex Pro</option>
+        </select>
+        <select id="fontSizeSelect" class="header-select" aria-label="Font Size">
+          <option value="14px" data-i18n="sizeSm">حجم: صغير</option>
+          <option value="16px" selected data-i18n="sizeMd">حجم: متوسط</option>
+          <option value="18px" data-i18n="sizeLg">حجم: كبير</option>
+          <option value="20px" data-i18n="sizeXl">حجم: كبير جداً</option>
+        </select>
+        <button id="btnLang" class="btn-icon" type="button">🌐 EN</button>
+        <button id="btnTheme" class="btn-icon" type="button">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 18px;">
+    <!-- Global Location Selector Bar -->
+    <section class="location-bar">
+      <div class="location-controls">
+        <div class="search-wrap">
+          <input type="text" id="citySearchInput" class="search-input" autocomplete="off" data-i18n-placeholder="searchCityPlaceholder" placeholder="ابحث عن أي مدينة في العالم (مثل: القاهرة، مكة، لندن، طوكيو...)" />
+          <div id="searchDropdown" class="search-dropdown hidden"></div>
+        </div>
+        <button type="button" id="btnSearchOnline" class="btn-secondary" data-i18n="searchOnlineBtn">🔍 بحث عالمي</button>
+        <button type="button" id="btnDetectGps" class="btn-primary" data-i18n="detectGpsBtn">📍 تحديد موقعي (GPS)</button>
+        <button type="button" id="btnCustomCoords" class="btn-secondary" data-i18n="customCoordsBtn">🌐 إحداثيات مخصصة</button>
+        <button type="button" id="btnSaveFav" class="btn-secondary" data-i18n="saveCityBtn">⭐ حفظ المدينة</button>
+      </div>
+      <div class="favorites-strip" id="favoritesStrip"></div>
+    </section>
+
+    <!-- VIEW 1: Prayer Times & Colorful Cards -->
+    <section id="view-prayers" class="app-view active">
+      <div class="hero-card">
+        <div class="hero-grid">
+          <div>
+            <span class="hero-tag" data-i18n="heroTag">🕌 حساب فلكي دقيق يعمل في كل مكان بالعالم (حتى بدون إنترنت)</span>
+            <h2 class="hero-city-title" id="heroCityName">القاهرة، مصر</h2>
+            <p class="hero-dates" id="heroDates">—</p>
+            <div class="hero-meta-row">
+              <div class="hero-meta-pill">🕒 <span data-i18n="cityLocalTime">الوقت المحلي</span>: <strong id="cityLocalClock">--:--:--</strong></div>
+              <div class="hero-meta-pill">📐 <span data-i18n="methodUsedLabel">طريقة الحساب</span>: <strong id="heroMethodName">—</strong></div>
+              <div class="hero-meta-pill">📍 <span id="heroCoords">—</span></div>
+            </div>
+          </div>
+
+          <div class="countdown-box">
+            <div class="countdown-label" data-i18n="nextPrayerLabel">الصلاة القادمة</div>
+            <div class="countdown-prayer-name" id="nextPrayerName">—</div>
+            <div class="countdown-timer" id="nextPrayerCountdown">00:00:00</div>
+            <div class="progress-track">
+              <div class="progress-fill" id="prayerProgressBar" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Colorful Prayer Cards -->
+      <div class="prayers-grid" id="prayerCardsGrid"></div>
+
+      <!-- Smart Insights Strip: Qibla Quick Card + Night Times -->
+      <div class="insights-grid">
+        <div class="info-card info-card-accent" style="--card-accent: #d97706;">
+          <h3>🧭 <span data-i18n="qiblaQuickCard">اتجاه القبلة من موقعك</span></h3>
+          <div class="big-stat" id="quickQiblaBearing">—°</div>
+          <p style="color: var(--text-muted); margin: 6px 0 12px;" id="quickQiblaDistance">—</p>
+          <button type="button" id="btnGoQibla" class="btn-primary" data-i18n="openQiblaBtn">فتح البوصلة التفاعلية ←</button>
+        </div>
+
+        <div class="info-card info-card-accent" style="--card-accent: #4f46e5;">
+          <h3>🌙 <span data-i18n="qiyamHint">وقت السحر والقيام والاستغفار</span></h3>
+          <div class="night-times-list">
+            <div class="night-pill">
+              <span data-i18n="midnight">منتصف الليل الشرعي</span>
+              <strong id="midnightVal">--:--</strong>
+            </div>
+            <div class="night-pill">
+              <span data-i18n="lastThird">الثلث الأخير من الليل</span>
+              <strong id="lastThirdVal">--:--</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: Qibla Compass & World Map -->
+    <section id="view-qibla" class="app-view">
+      <div style="margin-bottom: 18px;">
+        <h2 data-i18n="qiblaTitle">تحديد اتجاه القبلة بدقة</h2>
+        <p style="color: var(--text-muted);" data-i18n="qiblaSubtitle">بوصلة تفاعلية تعمل بمستشعر الهاتف، مع خريطة المسار الجغرافي وطريقة الشمس الذكية</p>
+      </div>
+
+      <div class="qibla-layout">
+        <div class="compass-card">
+          <button type="button" id="btnEnableCompass" class="btn-primary" data-i18n="enableCompassBtn">🧭 تفعيل البوصلة الحية</button>
+          <div class="compass-status-banner" id="compassStatusBanner">—</div>
+
+          <div class="compass-svg-wrap">
+            <svg id="qiblaCompassSvg" viewBox="0 0 320 320" width="100%" height="100%">
+              <defs>
+                <radialGradient id="compassBg" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#065f46" stop-opacity="0.14"/>
+                  <stop offset="100%" stop-color="#064e3b" stop-opacity="0.04"/>
+                </radialGradient>
+              </defs>
+              <!-- Outer Bezel -->
+              <circle cx="160" cy="160" r="150" fill="url(#compassBg)" stroke="#059669" stroke-width="3"/>
+              <circle cx="160" cy="160" r="134" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 6"/>
+              <!-- Fixed Phone Top Indicator -->
+              <polygon points="160,6 152,22 168,22" fill="#ef4444"/>
+
+              <!-- Rotating Dial Group -->
+              <g id="compassDialGroup" transform="rotate(0 160 160)">
+                <text x="160" y="42" text-anchor="middle" font-size="16" font-weight="800" fill="#ef4444">N</text>
+                <text x="278" y="166" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">E</text>
+                <text x="160" y="290" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">S</text>
+                <text x="42" y="166" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">W</text>
+                <!-- Qibla Needle Group (rotated to qiblaBearing inside dial) -->
+                <g id="qiblaNeedleGroup" transform="rotate(0 160 160)">
+                  <line x1="160" y1="160" x2="160" y2="54" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                  <polygon points="160,36 148,62 172,62" fill="#f59e0b"/>
+                  <rect x="148" y="64" width="24" height="24" rx="4" fill="#111827" stroke="#fbbf24" stroke-width="2"/>
+                  <line x1="148" y1="71" x2="172" y2="71" stroke="#fbbf24" stroke-width="2.5"/>
+                </g>
+              </g>
+              <circle cx="160" cy="160" r="10" fill="#064e3b" stroke="#fbbf24" stroke-width="3"/>
+            </svg>
+          </div>
+
+          <div class="sim-slider-box">
+            <label for="simHeadingSlider" style="font-size:0.84rem; font-weight:700; color:var(--text-muted);" data-i18n="simHeadingLabel">معايرة / تجربة الاتجاه يدوياً (لأجهزة الكمبيوتر)</label>
+            <input type="range" id="simHeadingSlider" min="0" max="359" value="0" />
+          </div>
+        </div>
+
+        <div>
+          <div class="qibla-stats-grid">
+            <div class="qibla-stat-box">
+              <span data-i18n="qiblaAngleLabel">زاوية القبلة (من الشمال الحقيقي)</span>
+              <strong id="qiblaBearingBig">—°</strong>
+            </div>
+            <div class="qibla-stat-box">
+              <span data-i18n="deviceHeadingLabel">اتجاه الجهاز الحالي</span>
+              <strong id="deviceHeadingVal">0°</strong>
+            </div>
+            <div class="qibla-stat-box">
+              <span data-i18n="distanceToKaaba">المسافة إلى الكعبة المشرفة</span>
+              <strong id="qiblaDistanceBig">—</strong>
+            </div>
+            <div class="qibla-stat-box">
+              <span data-i18n="sunAzimuthLabel">اتجاه الشمس الآن</span>
+              <strong id="sunAzimuthVal">—°</strong>
+            </div>
+          </div>
+
+          <div class="info-card info-card-accent" style="--card-accent: #f59e0b; margin-bottom: 16px;">
+            <h3 data-i18n="sunQiblaTitle">☀️ تحديد القبلة بالشمس (الطريقة الفلكية الذكية)</h3>
+            <p id="sunQiblaAdvice" style="font-size:0.92rem; color:var(--text-secondary);">—</p>
+          </div>
+
+          <div class="info-card">
+            <h3 data-i18n="worldArcTitle">🌍 مسار القبلة على الخريطة العالمية (أقصر مسار دائري)</h3>
+            <svg id="worldArcSvg" class="world-map-svg" viewBox="0 0 720 340"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Monthly Schedule -->
+    <section id="view-schedule" class="app-view">
+      <div class="schedule-header">
+        <div>
+          <h2 data-i18n="scheduleTitle">الجدول الشهري لمواقيت الصلاة</h2>
+          <p style="color: var(--text-muted);" data-i18n="scheduleSubtitle">استعرض مواقيت الشهر كاملاً لأي مدينة مع إمكانية الطباعة أو التصدير للتقويم</p>
+        </div>
+        <div class="schedule-actions" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button type="button" id="btnPrevMonth" class="btn-secondary" data-i18n="prevMonthBtn">الشهر السابق</button>
+          <strong id="scheduleMonthLabel" style="padding:0 8px;">—</strong>
+          <button type="button" id="btnNextMonth" class="btn-secondary" data-i18n="nextMonthBtn">الشهر التالي</button>
+          <button type="button" id="btnPrintSchedule" class="btn-secondary" data-i18n="printScheduleBtn">🖨️ طباعة / PDF</button>
+          <button type="button" id="btnExportIcs" class="btn-primary" data-i18n="exportIcsBtn">📅 تصدير للتقويم (.ics)</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th data-i18n="colDate">التاريخ الميلادي</th>
+              <th data-i18n="colHijri">التاريخ الهجري</th>
+              <th data-i18n="fajr">الفجر</th>
+              <th data-i18n="sunrise">الشروق</th>
+              <th data-i18n="dhuhr">الظهر</th>
+              <th data-i18n="asr">العصر</th>
+              <th data-i18n="maghrib">المغرب</th>
+              <th data-i18n="isha">العشاء</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VIEW 4: Daily Tracker & Calculation/Alert Settings -->
+    <section id="view-tracker" class="app-view">
+      <div class="tracker-grid">
+        <!-- Daily Prayer & Sunnah Tracker -->
+        <div class="info-card info-card-accent" style="--card-accent: #059669;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 data-i18n="trackerTitle">متابعة الصلوات اليومية والسنن</h3>
+            <span class="prayer-badge" style="background:var(--brand-emerald); color:#fff;" id="trackerProgressBadge">0/10</span>
+          </div>
+          <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:14px;" data-i18n="trackerSubtitle">سجّل صلواتك والسنن الرواتب يومياً لتحفيز الاستمرار والمحافظة على الصلاة في وقتها</p>
+
+          <h4 style="font-size:0.92rem; margin-bottom:8px; color:var(--brand-emerald);" data-i18n="obligatoryTitle">الصلوات الخمس المفروضة</h4>
+          <div id="obligatoryChecklist"></div>
+
+          <h4 style="font-size:0.92rem; margin:14px 0 8px; color:var(--brand-gold);" data-i18n="sunnahTitle">السنن الرواتب والنوافل</h4>
+          <div id="sunnahChecklist"></div>
+        </div>
+
+        <!-- Settings & Alerts -->
+        <div class="info-card info-card-accent" style="--card-accent: #0284c7;">
+          <h3 data-i18n="settingsTitle">إعدادات الحساب والتنبيهات</h3>
+          <div class="form-group">
+            <label for="calcMethodSelect" data-i18n="calcMethodLabel">هيئة / طريقة الحساب الفلكي</label>
+            <select id="calcMethodSelect" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label for="asrSchoolSelect" data-i18n="asrSchoolLabel">حساب وقت العصر</label>
+            <select id="asrSchoolSelect" class="form-control">
+              <option value="STANDARD" data-i18n="asrStandard">الجمهور (الشافعي، المالكي، الحنبلي)</option>
+              <option value="HANAFI" data-i18n="asrHanafi">المذهب الحنفي</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="highLatSelect" data-i18n="highLatLabel">تعديل خطوط العرض العليا (أوروبا وكندا)</label>
+            <select id="highLatSelect" class="form-control">
+              <option value="ANGLE" data-i18n="highLatAngle">حسب الزاوية (Angle-Based)</option>
+              <option value="SEVENTH" data-i18n="highLatSeventh">سُبع الليل (One-Seventh)</option>
+              <option value="MIDNIGHT" data-i18n="highLatMid">منتصف الليل (Middle of Night)</option>
+              <option value="NONE" data-i18n="highLatNone">بدون تعديل</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="timeFormatSelect" data-i18n="timeFormatLabel">تنسيق الوقت</label>
+            <select id="timeFormatSelect" class="form-control">
+              <option value="12" data-i18n="format12">نظام 12 ساعة (ص / م)</option>
+              <option value="24" data-i18n="format24">نظام 24 ساعة</option>
+            </select>
+          </div>
+
+          <hr style="border:none; border-top:1px solid var(--border-color); margin:16px 0;" />
+          <h3 data-i18n="alertsTitle">التنبيهات الصوتية والإشعارات</h3>
+          <div class="form-group">
+            <label for="preAlertSelect" data-i18n="preAlertLabel">التنبيه قبل الصلاة بـ</label>
+            <select id="preAlertSelect" class="form-control">
+              <option value="0" data-i18n="preAlert0">عند دخول الوقت فقط</option>
+              <option value="5" data-i18n="preAlert5">5 دقائق</option>
+              <option value="10" data-i18n="preAlert10">10 دقائق</option>
+              <option value="15" data-i18n="preAlert15">15 دقيقة</option>
+            </select>
+          </div>
+          <label class="checklist-item" style="margin-bottom:14px;">
+            <span data-i18n="soundAlertToggle">تشغيل نغمة تنبيه لطيفة عند دخول وقت الصلاة</span>
+            <input type="checkbox" id="soundAlertCheck" checked />
+          </label>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" id="btnEnableNotif" class="btn-primary" data-i18n="enableNotifBtn">🔔 تفعيل إشعارات المتصفح</button>
+            <button type="button" id="btnTestSound" class="btn-secondary" data-i18n="testSoundBtn">🔊 تجربة نغمة التنبيه</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Custom Coordinates Modal -->
+  <div id="coordsModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h3 style="margin-bottom:14px;" data-i18n="customCoordsBtn">🌐 إحداثيات مخصصة</h3>
+      <div class="form-group">
+        <label for="inputLat" data-i18n="customLat">خط العرض (Latitude)</label>
+        <input type="number" step="0.0001" id="inputLat" class="form-control" value="30.0444" />
+      </div>
+      <div class="form-group">
+        <label for="inputLng" data-i18n="customLng">خط الطول (Longitude)</label>
+        <input type="number" step="0.0001" id="inputLng" class="form-control" value="31.2357" />
+      </div>
+      <div class="form-group">
+        <label for="inputTz" data-i18n="customTz">المنطقة الزمنية (UTC Offset)</label>
+        <input type="number" step="0.5" id="inputTz" class="form-control" value="2" />
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" id="btnCancelCoords" class="btn-secondary" data-i18n="cancelBtn">إلغاء</button>
+        <button type="button" id="btnApplyCoords" class="btn-primary" data-i18n="applyCoords">تطبيق الإحداثيات</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="container">
+      <div class="footer-verse" data-i18n="footerVerse">﴿إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا﴾</div>
+      <p data-i18n="footerDesc">تطبيق مواقيت الصلاة والقبلة العالمي — تصميم وتطوير شركة AnubisLand • يعمل بدقة فلكية عالية وبوضع عدم الاتصال (PWA)</p>
+    </div>
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/cities-data.js"></script>
+  <script src="js/prayer-engine.js"></script>
+  <script src="js/qibla-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
