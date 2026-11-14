@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mawaqeet-qibla-v5';
+const CACHE_NAME = 'mawaqeet-qibla-v6';
 const ASSETS = [
   './',
   './index.html',
